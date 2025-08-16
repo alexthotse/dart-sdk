@@ -87,7 +87,7 @@ class AnnotationVerifier {
 
       _diagnosticReporter.atNode(
         errorNode ?? node.name,
-        WarningCode.INVALID_AWAIT_NOT_REQUIRED_ANNOTATION,
+        WarningCode.invalidAwaitNotRequiredAnnotation,
       );
     }
 
@@ -141,6 +141,13 @@ class AnnotationVerifier {
       _checkDeprecatedSubclass(node, node.parent);
       return;
     }
+
+    var isInstantiate =
+        value.getField('_isInstantiate')?.toBoolValue() ?? false;
+    if (isInstantiate) {
+      _checkDeprecatedInstantiate(node, node.parent);
+      return;
+    }
   }
 
   void _checkDeprecatedExtend(Annotation node, AstNode parent) {
@@ -154,17 +161,15 @@ class AnnotationVerifier {
     }
 
     if (declaredElement is ClassElement) {
-      var hasGenerativeConstructor = declaredElement.constructors.any(
-        (c) => c.isPublic && c.isGenerative,
-      );
-      if (declaredElement.isExtendableOutside && hasGenerativeConstructor) {
+      if (declaredElement.isExtendableOutside &&
+          declaredElement.hasGenerativeConstructor) {
         return;
       }
     }
 
     _diagnosticReporter.atNode(
       node.name,
-      WarningCode.INVALID_DEPRECATED_EXTEND_ANNOTATION,
+      WarningCode.invalidDeprecatedExtendAnnotation,
     );
   }
 
@@ -190,7 +195,30 @@ class AnnotationVerifier {
 
     _diagnosticReporter.atNode(
       node.name,
-      WarningCode.INVALID_DEPRECATED_IMPLEMENT_ANNOTATION,
+      WarningCode.invalidDeprecatedImplementAnnotation,
+    );
+  }
+
+  void _checkDeprecatedInstantiate(Annotation node, AstNode parent) {
+    Element? declaredElement;
+    if (parent
+        case ClassDeclaration(:var declaredFragment) ||
+            ClassTypeAlias(:var declaredFragment)) {
+      declaredElement = declaredFragment!.element;
+    } else if (parent is GenericTypeAlias) {
+      declaredElement = parent.type.type?.element;
+    }
+
+    if (declaredElement is ClassElement) {
+      if (!declaredElement.isAbstract &&
+          declaredElement.hasGenerativeConstructor) {
+        return;
+      }
+    }
+
+    _diagnosticReporter.atNode(
+      node.name,
+      WarningCode.invalidDeprecatedInstantiateAnnotation,
     );
   }
 
@@ -217,7 +245,7 @@ class AnnotationVerifier {
 
     _diagnosticReporter.atNode(
       node.name,
-      WarningCode.INVALID_DEPRECATED_SUBCLASS_ANNOTATION,
+      WarningCode.invalidDeprecatedSubclassAnnotation,
     );
   }
 
@@ -233,7 +261,7 @@ class AnnotationVerifier {
     if (returnType is VoidType) {
       _diagnosticReporter.atToken(
         parent.name,
-        WarningCode.INVALID_FACTORY_METHOD_DECL,
+        WarningCode.invalidFactoryMethodDecl,
         arguments: [parent.name.lexeme],
       );
       return;
@@ -263,7 +291,7 @@ class AnnotationVerifier {
 
     _diagnosticReporter.atToken(
       parent.name,
-      WarningCode.INVALID_FACTORY_METHOD_IMPL,
+      WarningCode.invalidFactoryMethodImpl,
       arguments: [parent.name.lexeme],
     );
   }
@@ -281,7 +309,7 @@ class AnnotationVerifier {
         if (element.isPrivate) {
           _diagnosticReporter.atNode(
             variable,
-            WarningCode.INVALID_INTERNAL_ANNOTATION,
+            WarningCode.invalidInternalAnnotation,
           );
         }
       }
@@ -291,7 +319,7 @@ class AnnotationVerifier {
         if (element.isPrivate) {
           _diagnosticReporter.atNode(
             variable,
-            WarningCode.INVALID_INTERNAL_ANNOTATION,
+            WarningCode.invalidInternalAnnotation,
           );
         }
       }
@@ -301,18 +329,18 @@ class AnnotationVerifier {
       if (class_.isPrivate || parentElementIsPrivate) {
         _diagnosticReporter.atNode(
           node.name,
-          WarningCode.INVALID_INTERNAL_ANNOTATION,
+          WarningCode.invalidInternalAnnotation,
         );
       }
     } else if (parentElementIsPrivate) {
       _diagnosticReporter.atNode(
         node.name,
-        WarningCode.INVALID_INTERNAL_ANNOTATION,
+        WarningCode.invalidInternalAnnotation,
       );
     } else if (_inPackagePublicApi) {
       _diagnosticReporter.atNode(
         node.name,
-        WarningCode.INVALID_INTERNAL_ANNOTATION,
+        WarningCode.invalidInternalAnnotation,
       );
     }
   }
@@ -336,7 +364,7 @@ class AnnotationVerifier {
         var validKinds = kindNames.commaSeparatedWithOr;
         _diagnosticReporter.atNode(
           node.name,
-          WarningCode.INVALID_ANNOTATION_TARGET,
+          WarningCode.invalidAnnotationTarget,
           arguments: [name!, validKinds],
         );
         return;
@@ -351,7 +379,7 @@ class AnnotationVerifier {
     if (parent is! ConstructorDeclaration || parent.constKeyword == null) {
       _diagnosticReporter.atNode(
         node.name,
-        WarningCode.INVALID_LITERAL_ANNOTATION,
+        WarningCode.invalidLiteralAnnotation,
       );
     }
   }
@@ -364,7 +392,7 @@ class AnnotationVerifier {
       if (parent.isStatic) {
         _diagnosticReporter.atNode(
           node.name,
-          WarningCode.INVALID_NON_VIRTUAL_ANNOTATION,
+          WarningCode.invalidNonVirtualAnnotation,
         );
       }
     } else if (parent is MethodDeclaration) {
@@ -374,13 +402,13 @@ class AnnotationVerifier {
           parent.isAbstract) {
         _diagnosticReporter.atNode(
           node.name,
-          WarningCode.INVALID_NON_VIRTUAL_ANNOTATION,
+          WarningCode.invalidNonVirtualAnnotation,
         );
       }
     } else {
       _diagnosticReporter.atNode(
         node.name,
-        WarningCode.INVALID_NON_VIRTUAL_ANNOTATION,
+        WarningCode.invalidNonVirtualAnnotation,
       );
     }
   }
@@ -393,7 +421,7 @@ class AnnotationVerifier {
         parent is MethodDeclaration && parent.isStatic) {
       _diagnosticReporter.atNode(
         node.name,
-        WarningCode.INVALID_ANNOTATION_TARGET,
+        WarningCode.invalidAnnotationTarget,
         arguments: [node.name.name, 'instance members of extension types'],
       );
     }
@@ -429,14 +457,14 @@ class AnnotationVerifier {
         classElement.isSealed) {
       _diagnosticReporter.atNode(
         node.name,
-        WarningCode.INVALID_REOPEN_ANNOTATION,
+        WarningCode.invalidReopenAnnotation,
       );
       return;
     }
     if (classElement.library != superElement.library) {
       _diagnosticReporter.atNode(
         node.name,
-        WarningCode.INVALID_REOPEN_ANNOTATION,
+        WarningCode.invalidReopenAnnotation,
       );
       return;
     }
@@ -444,7 +472,7 @@ class AnnotationVerifier {
       if (!superElement.isFinal && !superElement.isInterface) {
         _diagnosticReporter.atNode(
           node.name,
-          WarningCode.INVALID_REOPEN_ANNOTATION,
+          WarningCode.invalidReopenAnnotation,
         );
         return;
       }
@@ -455,7 +483,7 @@ class AnnotationVerifier {
       if (!superElement.isInterface) {
         _diagnosticReporter.atNode(
           node.name,
-          WarningCode.INVALID_REOPEN_ANNOTATION,
+          WarningCode.invalidReopenAnnotation,
         );
         return;
       }
@@ -485,7 +513,7 @@ class AnnotationVerifier {
                 : undefinedParameter.correspondingParameter?.name;
         _diagnosticReporter.atNode(
           undefinedParameter,
-          WarningCode.UNDEFINED_REFERENCED_PARAMETER,
+          WarningCode.undefinedReferencedParameter,
           arguments: [parameterName ?? undefinedParameter, name],
         );
       }
@@ -503,7 +531,7 @@ class AnnotationVerifier {
         // assume that `declaredElement.name` is non-`null`.
         _diagnosticReporter.atNode(
           node.name,
-          WarningCode.INVALID_VISIBILITY_ANNOTATION,
+          WarningCode.invalidVisibilityAnnotation,
           arguments: [name, node.name.name],
         );
       }
@@ -511,7 +539,7 @@ class AnnotationVerifier {
       void reportInvalidVisibleForOverriding() {
         _diagnosticReporter.atNode(
           node.name,
-          WarningCode.INVALID_VISIBLE_FOR_OVERRIDING_ANNOTATION,
+          WarningCode.invalidVisibleForOverridingAnnotation,
         );
       }
 
@@ -567,7 +595,7 @@ class AnnotationVerifier {
     void reportError() {
       _diagnosticReporter.atNode(
         node.name,
-        WarningCode.INVALID_VISIBLE_OUTSIDE_TEMPLATE_ANNOTATION,
+        WarningCode.invalidVisibleOutsideTemplateAnnotation,
       );
     }
 
@@ -734,4 +762,9 @@ class AnnotationVerifier {
       _ => false,
     };
   }
+}
+
+extension on ClassElement {
+  bool get hasGenerativeConstructor =>
+      constructors.any((c) => c.isPublic && c.isGenerative);
 }

@@ -207,8 +207,16 @@ void f() {
     ]);
   }
 
-  Future<void> test_classLast_import() async {
+  Future<void> test_classLast_imports() async {
     newFile('$testPackageLibPath/lib.dart', r'''
+class A {}
+''');
+    newFile('$testPackageLibPath/export.dart', '''
+export 'lib.dart';
+''');
+    // This example project doesn't have to make sense, only demonstrate the
+    // priorities
+    newFile('$testPackageLibPath/src/inner.dart', '''
 class A {}
 ''');
     await resolveTestCode('''
@@ -216,6 +224,8 @@ A? a;
 ''');
     await assertFixPriorityOrder([
       DartFixKind.IMPORT_LIBRARY_PROJECT1,
+      DartFixKind.IMPORT_LIBRARY_PROJECT2,
+      DartFixKind.IMPORT_LIBRARY_PROJECT3,
       DartFixKind.CREATE_CLASS_UPPERCASE,
     ]);
   }
@@ -450,7 +460,7 @@ class Test {
 }
 ''',
       errorFilter: (e) {
-        return e.diagnosticCode == CompileTimeErrorCode.UNDEFINED_FUNCTION;
+        return e.diagnosticCode == CompileTimeErrorCode.undefinedFunction;
       },
     );
   }
@@ -541,8 +551,7 @@ class Test {
 }
 ''',
       errorFilter: (error) {
-        return error.diagnosticCode ==
-            CompileTimeErrorCode.UNDEFINED_IDENTIFIER;
+        return error.diagnosticCode == CompileTimeErrorCode.undefinedIdentifier;
       },
     );
     assertLinkedGroup(change.linkedEditGroups[0], ['Test])', 'Test {']);

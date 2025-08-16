@@ -27,7 +27,7 @@ class UnsafeVariance extends LintRule {
       );
 
   @override
-  DiagnosticCode get diagnosticCode => LinterLintCode.unsafe_variance;
+  DiagnosticCode get diagnosticCode => LinterLintCode.unsafeVariance;
 
   @override
   void registerNodeProcessors(
@@ -56,7 +56,7 @@ class _UnsafeVarianceChecker extends VarianceChecker {
         return;
       }
       if (typeParameterElement is TypeParameterElementImpl) {
-        if (typeParameterElement.firstFragment.isLegacyCovariant &&
+        if (typeParameterElement.isLegacyCovariant &&
             variance != Variance.out) {
           rule.reportAtNode(typeAnnotation);
         }

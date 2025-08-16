@@ -26,7 +26,7 @@ class Foo {}
 import 'foo.dart';
 class Bar implements Foo {}
 ''',
-      [error(WarningCode.DEPRECATED_IMPLEMENT, 40, 3)],
+      [error(WarningCode.deprecatedImplement, 40, 3)],
     );
   }
 
@@ -59,7 +59,7 @@ class Bar implements Foo2 {}
   test_annotatedClassTypeAlias() async {
     newFile('$testPackageLibPath/foo.dart', r'''
 @Deprecated.implement()
-class Foo  = Object with M;
+class Foo = Object with M;
 mixin M {}
 ''');
 
@@ -68,7 +68,7 @@ mixin M {}
 import 'foo.dart';
 class Bar implements Foo {}
 ''',
-      [error(WarningCode.DEPRECATED_IMPLEMENT, 40, 3)],
+      [error(WarningCode.deprecatedImplement, 40, 3)],
     );
   }
 
@@ -84,7 +84,7 @@ import 'foo.dart';
 mixin M {}
 class Bar = Object with M implements Foo;
 ''',
-      [error(WarningCode.DEPRECATED_IMPLEMENT, 67, 3)],
+      [error(WarningCode.deprecatedImplement, 67, 3)],
     );
   }
 
@@ -99,7 +99,7 @@ class Foo {}
 import 'foo.dart';
 enum Bar implements Foo { one; }
 ''',
-      [error(WarningCode.DEPRECATED_IMPLEMENT, 39, 3)],
+      [error(WarningCode.deprecatedImplement, 39, 3)],
     );
   }
 
@@ -122,7 +122,7 @@ class Foo {}
 import 'foo.dart';
 mixin Bar implements Foo {}
 ''',
-      [error(WarningCode.DEPRECATED_IMPLEMENT, 40, 3)],
+      [error(WarningCode.deprecatedImplement, 40, 3)],
     );
   }
 
@@ -137,7 +137,7 @@ class Foo {}
 import 'foo.dart';
 mixin Bar on Foo {}
 ''',
-      [error(WarningCode.DEPRECATED_IMPLEMENT, 32, 3)],
+      [error(WarningCode.deprecatedImplement, 32, 3)],
     );
   }
 

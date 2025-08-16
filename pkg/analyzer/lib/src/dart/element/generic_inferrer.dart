@@ -323,7 +323,7 @@ class GenericInferrer {
 
         _diagnosticReporter?.atEntity(
           errorEntity!,
-          CompileTimeErrorCode.COULD_NOT_INFER,
+          CompileTimeErrorCode.couldNotInfer,
           arguments: [name, _formatError(parameter, inferred, constraints)],
         );
 
@@ -352,7 +352,7 @@ class GenericInferrer {
         var typeParametersStr = typeParameters.map(_elementStr).join(', ');
         _diagnosticReporter.atEntity(
           errorEntity!,
-          CompileTimeErrorCode.COULD_NOT_INFER,
+          CompileTimeErrorCode.couldNotInfer,
           arguments: [
             name,
             ' Inferred candidate type ${_typeStr(inferred)} has type parameters'
@@ -409,7 +409,7 @@ class GenericInferrer {
         // TODO(jmesserly): improve this error message.
         _diagnosticReporter?.atEntity(
           errorEntity!,
-          CompileTimeErrorCode.COULD_NOT_INFER,
+          CompileTimeErrorCode.couldNotInfer,
           arguments: [
             name,
             "\nRecursive bound cannot be instantiated: '$typeParamBound'."
@@ -461,7 +461,7 @@ class GenericInferrer {
       if (!_typeSystem.isSubtypeOf(argument, bound)) {
         diagnosticReporter?.atEntity(
           errorEntity!,
-          CompileTimeErrorCode.COULD_NOT_INFER,
+          CompileTimeErrorCode.couldNotInfer,
           arguments: [
             name,
             "\n'${_typeStr(argument)}' doesn't conform to "
@@ -530,12 +530,16 @@ class GenericInferrer {
         }
       } else {
         inferredTypes[i] =
-            _inferTypeParameterFromAll(
+            _typeSystemOperations.inferTypeParameterFromAll(
+                  previouslyInferredType,
                   constraint,
-                  extendsClause,
+                  extendsClause?.upper.unwrapTypeSchemaView(),
                   isContravariant: typeParam.variance.isContravariant,
                   typeParameterToInfer: typeParam,
-                  inferencePhaseConstraints: inferencePhaseConstraints,
+                  constraints: inferencePhaseConstraints,
+                  dataForTesting: null,
+                  inferenceUsingBoundsIsEnabled: inferenceUsingBoundsIsEnabled,
+                  typeParametersToInfer: _typeFormals,
                 )
                 as TypeImpl;
       }
@@ -601,49 +605,6 @@ class GenericInferrer {
 
     return '\n\n$intro\n$unsatisfied$satisfied\n\n'
         'Consider passing explicit type argument(s) to the generic.\n\n';
-  }
-
-  SharedType _inferTypeParameterFromAll(
-    MergedTypeConstraint constraint,
-    MergedTypeConstraint? extendsClause, {
-    required bool isContravariant,
-    required TypeParameterElementImpl typeParameterToInfer,
-    required Map<TypeParameterElementImpl, MergedTypeConstraint>
-    inferencePhaseConstraints,
-  }) {
-    if (extendsClause != null) {
-      MergedTypeConstraint? boundConstraint;
-      if (inferenceUsingBoundsIsEnabled) {
-        if (!identical(
-          constraint.lower.unwrapTypeSchemaView(),
-          UnknownInferredType.instance,
-        )) {
-          boundConstraint = _typeSystemOperations.mergeInConstraintsFromBound(
-            typeParameterToInfer: typeParameterToInfer,
-            typeParametersToInfer: _typeFormals.cast<SharedTypeParameterView>(),
-            lower: constraint.lower.unwrapTypeSchemaView(),
-            inferencePhaseConstraints: inferencePhaseConstraints,
-            dataForTesting: dataForTesting,
-            inferenceUsingBoundsIsEnabled: inferenceUsingBoundsIsEnabled,
-          );
-        }
-      }
-
-      constraint = _squashConstraints([
-        constraint,
-        extendsClause,
-        if (boundConstraint != null &&
-            !boundConstraint.isEmpty(_typeSystemOperations))
-          boundConstraint,
-      ]);
-    }
-
-    var choice = _typeSystemOperations.chooseTypeFromConstraint(
-      constraint,
-      grounded: true,
-      isContravariant: isContravariant,
-    );
-    return choice;
   }
 
   SharedType _inferTypeParameterFromContext(
@@ -735,7 +696,7 @@ class GenericInferrer {
               : '${errorEntity.type}.${errorEntity.name}';
       diagnosticReporter.atNode(
         errorEntity,
-        WarningCode.INFERENCE_FAILURE_ON_INSTANCE_CREATION,
+        WarningCode.inferenceFailureOnInstanceCreation,
         arguments: [constructorName],
       );
     } else if (errorEntity is Annotation) {
@@ -749,7 +710,7 @@ class GenericInferrer {
                   : '${errorEntity.name.name}.${errorEntity.constructorName}';
           diagnosticReporter.atNode(
             errorEntity,
-            WarningCode.INFERENCE_FAILURE_ON_INSTANCE_CREATION,
+            WarningCode.inferenceFailureOnInstanceCreation,
             arguments: [constructorName],
           );
         }
@@ -773,7 +734,7 @@ class GenericInferrer {
         if (!element.metadata.hasOptionalTypeArgs) {
           diagnosticReporter.atNode(
             errorEntity,
-            WarningCode.INFERENCE_FAILURE_ON_FUNCTION_INVOCATION,
+            WarningCode.inferenceFailureOnFunctionInvocation,
             arguments: [errorEntity.name],
           );
           return;
@@ -785,7 +746,7 @@ class GenericInferrer {
         var typeDisplayString = _typeStr(type);
         diagnosticReporter.atNode(
           errorEntity,
-          WarningCode.INFERENCE_FAILURE_ON_GENERIC_INVOCATION,
+          WarningCode.inferenceFailureOnGenericInvocation,
           arguments: [typeDisplayString],
         );
         return;

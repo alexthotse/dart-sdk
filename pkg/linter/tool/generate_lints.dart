@@ -6,6 +6,7 @@
 /// the entries in `pkg/linter/messages.yaml`.
 library;
 
+import 'package:analyzer/src/utilities/extensions/string.dart';
 import 'package:analyzer_testing/package_root.dart' as pkg_root;
 import 'package:analyzer_utilities/tools.dart';
 
@@ -46,10 +47,6 @@ GeneratedFile get generatedCodesFile =>
 // Instead modify 'pkg/linter/messages.yaml' and run
 // 'dart run pkg/linter/tool/generate_lints.dart' to update.
 
-// We allow some snake_case and SCREAMING_SNAKE_CASE identifiers in generated
-// code, as they match names declared in the source configuration files.
-// ignore_for_file: constant_identifier_names
-
 // Generated comments don't quite align with flutter style.
 // ignore_for_file: flutter_style_todos
 
@@ -69,7 +66,8 @@ class LinterLintCode extends LintCode {
         if (codeInfo.deprecatedMessage case var deprecatedMessage?) {
           out.writeln('  @Deprecated("$deprecatedMessage")');
         }
-        out.writeln('  static const LintCode $errorName =');
+        var constantName = errorName.toCamelCase();
+        out.writeln('  static const LintCode $constantName =');
         out.writeln(
           codeInfo.toAnalyzerCode(
             linterLintCodeInfo,
@@ -81,11 +79,12 @@ class LinterLintCode extends LintCode {
         out.writeln();
       }
 
+      var removedLintName = 'removedLint';
       out.writeln('''
   /// A lint code that removed lints can specify as their `lintCode`.
   ///
   /// Avoid other usages as it should be made unnecessary and removed.
-  static const LintCode removed_lint = LinterLintCode(
+  static const LintCode $removedLintName = LinterLintCode(
     'removed_lint',
     'Removed lint.',
   );
